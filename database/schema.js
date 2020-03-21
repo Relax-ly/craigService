@@ -1,6 +1,7 @@
 // const db = require('db');
 const faker = require('faker')
 const mongoose = require('mongoose')
+const util = require('util')
 
 mongoose.connect('mongodb://localhost/Relaxly', {useNewUrlParser: true});
 
@@ -32,34 +33,60 @@ const makeDescription = () => {
   return `${adjectives[getRandomInt(0,adjectives.length-1)]} ${descriptors[getRandomInt(0,descriptors.length-1)]} ${houses[getRandomInt(0, houses.length-1)]}`
 }
 
-// for (var i = 0; i < 3; i++) {
-// console.log({
-//   photoSrc: ['https://loremflickr.com/320/240'],
-//   bedsAndHouse: makeBedsAndHouseString(),
-//   rating: `${getRandomArbitrary(3,5).toFixed(2)} (${getRandomInt(10, 10000)})`,
-//   description: `${makeDescription()}`,
-//   pricePerNight: `$${faker.commerce.price()}`
-// })
-// }
 
 var schema = new mongoose.Schema({
-  photoSrc: 'array', // strings of url locations
-  bedsAndHouse: [], // 'string and possible number of beds'
-  rating: 'array', // [number between 3-5 with 2 decimals for rating, integer less than 10k for # of strings]
-  description: 'string',
-  pricePerNight: 'string'
- });
-var House = mongoose.model('House', schema);
-
-let dataObj = {
-  photoSrc: ['https://loremflickr.com/320/240'],
-  bedsAndHouse: makeBedsAndHouseString(),
-  rating: `${getRandomArbitrary(3,5)} (${getRandomInt(10, 10000)})`,
-  description: `${makeDescription()}`,
-  pricePerNight: `$${faker.commerce.price()}`
-}
-
-House.create(dataObj, function (err, small) {
-  if (err) {throw (err);}
+  houseItem: {type: 'number', unique: true},
+  relatedHouses: [{
+    photoSrc: 'string', // strings of url locations
+    bedsAndHouse: 'string', // 'string and possible number of beds'
+    rating: 'string', // [number between 3-5 with 2 decimals for rating, integer less than 10k for # of strings]
+    description: 'string',
+    pricePerNight: 'string'
+  }]
 });
 
+var House = mongoose.model('House', schema);
+ let photoSrcArray = ['https://loremflickr.com/320/240']
+
+class houseObj {
+  constructor () {
+  this.photoSrc = 'https://loremflickr.com/320/240',
+  this.bedsAndHouse = makeBedsAndHouseString(),
+  this.rating = `${getRandomArbitrary(3,5).toFixed(2)} (${getRandomInt(10, 10000)})`,
+  this.description = `${makeDescription()}`,
+  this.pricePerNight = `$${faker.commerce.price()}`
+  }
+}
+
+let houseItemMaker = (numberOfObjects) => {
+  let array = [];
+  for (var i = 1; i <= numberOfObjects; i++) {
+    let relatedHouseArray = [];
+    let relatedHouseMaker = () => {
+      for (var j = 0; j < 8; j++) {
+        relatedHouseArray.push(new houseObj)
+      }
+    }
+    relatedHouseMaker();
+    let houseItem = {
+      houseItem: i,
+      relatedHouses: relatedHouseArray
+    }
+    array.push(houseItem)
+  }
+  return array;
+}
+
+
+const allHousesArray = houseItemMaker(10)
+
+console.log('allHousesArray: ', util.inspect(allHousesArray, { showHidden: true, depth: null }));
+
+
+for(var k = 1; k <= 10; k++) {
+House.create(allHousesArray, function (err, small) {
+  if (err) {throw (err);}
+});
+}
+
+// mongoose.connection.close()
